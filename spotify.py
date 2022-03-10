@@ -1,72 +1,141 @@
-from contextlib import nullcontext
 import sys
 import base64
 import requests
 import datetime
 import numpy as np
 from urllib.parse import urlencode
-import dash
-import dash_html_components as html
-import dash_core_components as dcc
 import plotly.express as px
 
 
 class SpotifyAPI(object):
-
-    # class variables provided for you. Some need to be filled in:
     access_token = None
-    access_token_expires = None
+    access_token_expires = datetime.datetime.now()
     access_token_did_expire = True
     client_id = None
     client_secret = None
-    token_url = None
+    token_url = 'https://accounts.spotify.com/api/token'
 
-    # ------- TO DO -------
-    # set client id and secret for all SpotifyAPI objects
-    def __init__(self):
-        return
+    def __init__(self, client_id, client_secret):
+        self.client_id = client_id
+        self.client_secret = client_secret
 
-    # ------- TO DO -------
-    # @return the b64 encoded client id and secret
     def get_client_credentials(self):
-        return
+        client_id = self.client_id
+        client_secret = self.client_secret
+        if client_id == None or client_secret == None:
+            raise Exception("You must set client_id and client_secret")
+        client_creds = f"{client_id}:{client_secret}"
+        print('client_creds:', client_creds)
+        client_creds_b64 = base64.b64encode(client_creds.encode())
+        print('client_creds_b64:', client_creds_b64)
+        print('client_creds_b64_decode:', client_creds_b64.decode())
+        return client_creds_b64.decode()
 
-    # ------- TO DO -------
-    # @return the formatted r request token header with b64 encoded credentials
     def get_token_headers(self):
-        return
+        client_creds_b64 = self.get_client_credentials()
+        return {
+            "Authorization": f"Basic {client_creds_b64}"
+        }
 
-    # ------- TO DO -------
-    # @return the token data (grant type)
     def get_token_data(self):
-        return
+        return {
+            "grant_type": "client_credentials"
+        }
 
-    # ------- TO DO -------
-    # @return True if able to perfrom authentication successfully
     def perform_auth(self):
-        # 1. get token url, data and headers
-
-        # 2. send post request to spotify
-        r = requests.post()  # fill in the parameters for request
-
-        # 3. check if request was successful
-
-        # 4 set self.access token to access token from request
-        self.access_token = None
-
-        # 5. set expiration date dependencies
-        self.access_token_expires = None
-        self.access_token_did_expire = None
+        print('client_id:', self.client_id)
+        print('client_secret', self.client_secret)
+        token_url = self.token_url
+        print('token_url:', token_url)
+        token_data = self.get_token_data()
+        print('token_data:', token_data)
+        token_headers = self.get_token_headers()
+        print('token_headers:', token_headers)
+        r = requests.post(token_url, data=token_data, headers=token_headers)
+        if r.status_code not in range(200, 299):
+            raise Exception("Could not authenticate client")
+            # return False
+        data = r.json()
+        now = datetime.datetime.now()
+        access_token = data['access_token']
+        expires_in = data['expires_in']
+        expires = now + datetime.timedelta(seconds=expires_in)
+        self.access_token = access_token
+        self.access_token_expires = expires
+        self.access_token_did_expire = expires < now
         return True
 
-    # ------- TO DO -------
-    # @return access token
     def get_access_token(self):
+        token = self.access_token
+        expires = self.access_token_expires
+        now = datetime.datetime.now()
+        if expires < now:
+            self.perform_auth()
+            return self.get_access_token()
+        elif token == None:
+            self.perform_auth()
+            return self.get_access_token()
+        return token
 
-        # NOTE: Remember to check for if the token expired and if its not set yet
+    def get_resource_header(self):
+        access_token = self.get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        return headers
+
+    # ------ TO DO --------
+    # @return the json of a track based on its id
+    # NOTE: add parameters as needed!
+    def get_resource_from_id(self):
         return
 
-    # ------- TO DO -------
-    # @return request header for general requests
-    def get_resource_header(self):
+    # ------ TO DO --------
+    # @return the json of an album based on its id
+    def get_album(self, id_):
+        return self.get_resource_from_id(of_type='albums', lookup_id=id_)
+
+    # ------ TO DO --------
+    # @return the json of an artist based on its id
+    def get_artist(self, id_):
+        return self.get_resource_from_id(of_type='artists', lookup_id=id_)
+
+    # ------ TO DO --------
+    # @return the json of a track based on its id
+    def get_track(self, id_):
+        return self.get_resource_from_id(of_type='tracks', lookup_id=id_)
+
+    # ------ TO DO --------
+    # @return the audio features of a track based on its id
+    def get_features(self, id_):
+        return
+
+    # ------ TO DO --------
+    # @return the json of a genre based on its id
+    def get_genres(self, id_):
+        return
+
+    # ------ TO DO --------
+    # @return the json of a playlist based on its id
+    def get_playlist(self, id_):
+        return
+
+    # ------ TO DO --------
+    # @return the row for a specific track with its features
+    def get_df_row(self, track, of_type='search'):
+        return
+
+    # ------ TO DO --------
+    # @return the json of a album based on its id
+    def get_recommended_tracks(self, seed_artists, seed_genres, seed_tracks, limit):
+        return
+
+    # ------ OPTIONAL HELPER --------
+    # @return the json of a album based on its id
+    def base_search(self, query_params):
+        return
+
+    # ------ TO DO --------
+    # @return the json of a search based on its query parameters
+    def search(self, query=None, operator=None, operator_query=None, search_type='artist'):
         return
