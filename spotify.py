@@ -91,48 +91,13 @@ class SpotifyAPI(object):
         return
 
     # ------ TO DO --------
-    # @return the json of an album based on its id
-    def get_album(self, id_):
-        return self.get_resource_from_id(of_type='albums', lookup_id=id_)
-
-    # ------ TO DO --------
-    # @return the json of an artist based on its id
-    def get_artist(self, id_):
-        return self.get_resource_from_id(of_type='artists', lookup_id=id_)
-
-    # ------ TO DO --------
-    # @return the json of a track based on its id
-    def get_track(self, id_):
-        return self.get_resource_from_id(of_type='tracks', lookup_id=id_)
-
-    # ------ TO DO --------
     # @return the audio features of a track based on its id
     def get_features(self, id_):
         return
 
     # ------ TO DO --------
-    # @return the json of a genre based on its id
-    def get_genres(self, id_):
-        return
-
-    # ------ TO DO --------
-    # @return the json of a playlist based on its id
-    def get_playlist(self, id_):
-        return
-
-    # ------ TO DO --------
     # @return the row for a specific track with its features
     def get_df_row(self, track, of_type='search'):
-        return
-
-    # ------ TO DO --------
-    # @return the json of a album based on its id
-    def get_recommended_tracks(self, seed_artists, seed_genres, seed_tracks, limit):
-        return
-
-    # ------ OPTIONAL HELPER --------
-    # @return the json of a album based on its id
-    def base_search(self, query_params):
         return
 
     # ------ TO DO --------
