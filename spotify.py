@@ -4,6 +4,9 @@ import requests
 import datetime
 import numpy as np
 from urllib.parse import urlencode
+import dash
+import dash_html_components as html
+import dash_core_components as dcc
 import plotly.express as px
 
 
@@ -84,23 +87,92 @@ class SpotifyAPI(object):
         }
         return headers
 
-    # ------ TO DO --------
-    # @return the json of a track based on its id
-    # NOTE: add parameters as needed!
-    def get_resource_from_id(self):
-        return
+    def get_resource_from_id(self, lookup_id, of_type='artists', version='v1'):
+        lookupurl = f"https://api.spotify.com/{version}/{of_type}/{lookup_id}"
+        headers = self.get_resource_header()
+        r = requests.get(lookupurl, headers=headers)
+        if r.status_code not in range(200, 299):
+            return {}
+        return r.json()
 
-    # ------ TO DO --------
-    # @return the audio features of a track based on its id
+    def get_album(self, id_):
+        return self.get_resource_from_id(of_type='albums', lookup_id=id_)
+
+    def get_artist(self, id_):
+        return self.get_resource_from_id(of_type='artists', lookup_id=id_)
+
+    def get_track(self, id_):
+        return self.get_resource_from_id(of_type='tracks', lookup_id=id_)
+
     def get_features(self, id_):
+        if isinstance(id_, list):
+            return self.get_resource_from_id(of_type='audio-features', lookup_id=','.join(id_))
+        return self.get_resource_from_id(of_type='audio-features', lookup_id=id_)
+
+    def get_genres(self, id_):
+        return self.get_artist(id_)['genres']
+
+    def get_playlist(self, id_):
         return
 
-    # ------ TO DO --------
-    # @return the row for a specific track with its features
     def get_df_row(self, track, of_type='search'):
-        return
+        if of_type == 'id':
+            track = self.get_track(track)
+        # make df row
+        row = [track['name'],
+               track['id'],
+               track['artists'][0]['name'],
+               track['artists'][0]['id'],
+               track['album']['name'],
+               track['album']['id']]
+        # get the song features
+        features = self.get_features(track['id'])
 
-    # ------ TO DO --------
-    # @return the json of a search based on its query parameters
+        # combine together
+        row.extend([value for value in features.values()][:11])
+        row.extend([value for value in features.values()][16:])
+
+        genres = self.get_genres(
+            track['artists'][0]['id'])
+        row.append(genres)
+        return row
+
+    def get_recommended_tracks(self, seed_artists, seed_genres, seed_tracks, limit):
+        headers = self.get_resource_header()
+        #query = {'seed_artists': seed_artists, 'seed_genres':seed_genres, 'seed_tracks':seed_tracks}
+        endpoint = "https://api.spotify.com/v1/recommendations"
+
+        #query = " ".join([f"{k}:{v}" for k,v in query.items()])
+        query_params = urlencode(
+            {"seed_artists": seed_artists, 'seed_genres': seed_genres, 'seed_tracks': seed_tracks})
+
+        lookup_url = f"{endpoint}?{query_params}&limit={str(limit)}"
+        r = requests.get(lookup_url, headers=headers)
+        if r.status_code not in range(200, 299):
+            return {}
+        return r.json()
+
+    def base_search(self, query_params):
+        headers = self.get_resource_header()
+        endpoint = "https://api.spotify.com/v1/search"
+        lookup_url = f"{endpoint}?{query_params}&limit=3"
+        r = requests.get(lookup_url, headers=headers)
+        if r.status_code not in range(200, 299):
+            return {}
+        return r.json()
+
     def search(self, query=None, operator=None, operator_query=None, search_type='artist'):
-        return
+        if query == None:
+            raise Exception("A query is required")
+        if isinstance(query, dict):
+            for key in list(query):
+                if query[key] == '':
+                    del query[key]
+            query = " ".join([f"{k}:{v}" for k, v in query.items()])
+        # if operator != None and operator_query != None:
+        #    if operator.lower() == "or" or operator.lower() == "not":
+        #        operator = operator.upper()
+        #        if isinstance(operator_query, str):
+        #            query = f"{query} {operator} {operator_query}"
+        query_params = urlencode({"q": query, "type": search_type.lower()})
+        return self.base_search(query_params)
