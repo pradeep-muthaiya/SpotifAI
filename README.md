@@ -8,3 +8,11 @@ Contains 3 files:
 - `app.py`
 
 <br>
+
+### Requirements:
+- Spotify API Developer access
+
+### Core Packages:
+- Sklearn
+- Dash
+- Pandas
